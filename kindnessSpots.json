@@ -1,0 +1,27 @@
+{
+    "kindnessSpots": [
+      {
+        "name": "The Felix Project",
+        "type": "Food Bank",
+        "address": "Unit 2, Felix Road, London, E8 3PE",
+        "phone": "+44 20 3011 6620",
+        "description": "The Felix Project rescues surplus food to deliver to people who need it the most.",
+        "location": {
+          "lat": 51.5405,
+          "lng": -0.0705
+        }
+      },
+      {
+        "name": "Crisis Skylight Centre",
+        "type": "Shelter",
+        "address": "66 Commercial Street, London, E1 6LT",
+        "phone": "+44 20 7426 5650",
+        "description": "Crisis provides support and shelter to people who are homeless in London.",
+        "location": {
+          "lat": 51.5180,
+          "lng": -0.0736
+        }
+      }
+    ]
+  }
+  
