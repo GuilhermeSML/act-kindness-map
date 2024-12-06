@@ -1,7 +1,7 @@
 // Initialize the map, set the view to London by default
 const map = L.map('map').setView([51.5074, -0.1278], 13); // Default to London
 
-// Set up the OpenStreetMap tile layer
+// Set up OpenStreetMap tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
@@ -13,56 +13,89 @@ const markers = L.markerClusterGroup(); // Marker cluster group to handle multip
 // Create custom icons for different types of kindness spots
 const foodIcon = L.icon({
   iconUrl: 'https://img.icons8.com/ios/50/000000/food.png',
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30],
+  iconSize: [50, 50], // Increased icon size
+  iconAnchor: [25, 50],
+  popupAnchor: [0, -50],
+  className: 'icon-background',
 });
 
 const shelterIcon = L.icon({
-  iconUrl: 'https://img.icons8.com/ios/50/000000/hotel-room.png',
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30],
+  iconUrl: 'https://img.icons8.com/?size=100&id=1138&format=png&color=000000',
+  iconSize: [50, 50],
+  iconAnchor: [25, 50],
+  popupAnchor: [0, -50],
+  className: 'icon-background',
 });
 
 const charityIcon = L.icon({
   iconUrl: 'https://img.icons8.com/ios/50/000000/giving.png',
-  iconSize: [30, 30],
-  iconAnchor: [15, 30],
-  popupAnchor: [0, -30],
+  iconSize: [50, 50],
+  iconAnchor: [25, 50],
+  popupAnchor: [0, -50],
+  className: 'icon-background',
 });
 
-// Fetch kindness spots data from the JSON file (Make sure to use the correct path)
-fetch('kindnessSpots.json') // Your kindness spots JSON file should be in the same folder or adjust the path
-  .then(response => response.json())
-  .then(data => {
-    displayKindnessSpots(data.kindnessSpots); // Call function to add markers
-  })
-  .catch(error => console.error("Error fetching data:", error));
+// Function to fetch kindness spots data from Overpass API
+function fetchKindnessSpots(lat, lng) {
+  // Clear previous kindness spots
+  kindnessSpotsLayer.clearLayers();
+  markers.clearLayers();
 
-// Function to display kindness spots on the map
-function displayKindnessSpots(spots) {
-  spots.forEach(spot => {
-    const markerIcon = spot.type === 'Food Bank' 
-      ? foodIcon 
-      : spot.type === 'Shelter' 
-      ? shelterIcon 
-      : charityIcon;
+  const overpassUrl = 'https://overpass-api.de/api/interpreter';
+  const query = `
+    [out:json];
+    (
+      node["amenity"="food_bank"](around:10000,${lat},${lng});
+      node["amenity"="shelter"](around:10000,${lat},${lng});
+      node["shop"="charity"](around:10000,${lat},${lng});
+    );
+    out body;
+  `;
+  
+  // Send the request to Overpass API
+  fetch(overpassUrl + '?data=' + encodeURIComponent(query))
+    .then(response => response.json())
+    .then(data => {
+      displayKindnessSpotsFromOSM(data.elements, lat, lng); // Function to add markers
+    })
+    .catch(error => console.error("Error fetching data from Overpass API:", error));
+}
 
-    const marker = L.marker([spot.location.lat, spot.location.lng], { icon: markerIcon })
+// Function to display kindness spots from Overpass API on the map
+function displayKindnessSpotsFromOSM(elements, lat, lng) {
+  elements.forEach(spot => {
+    let icon;
+
+    // Assign appropriate icon based on the tag (e.g., food bank, shelter, charity shop)
+    if (spot.tags.amenity === 'food_bank') {
+      icon = foodIcon;
+    } else if (spot.tags.amenity === 'shelter') {
+      icon = shelterIcon;
+    } else if (spot.tags.shop === 'charity') {
+      icon = charityIcon;
+    } else {
+      return; // Skip if it's not a kindness spot we're interested in
+    }
+
+    // Create a marker for each kindness spot using the appropriate icon
+    const marker = L.marker([spot.lat, spot.lon], { icon: icon })
       .bindPopup(`
-        <strong>${spot.name}</strong><br>
-        ${spot.description}<br>
-        <em>Type: ${spot.type}</em><br>
-        <strong>Address:</strong> ${spot.address}<br>
-        <strong>Phone:</strong> ${spot.phone}
+        <strong>${spot.tags.name || 'Unnamed'}</strong><br>
+        <em>Type: ${spot.tags.amenity || spot.tags.shop}</em><br>
+        <strong>Address:</strong> ${spot.tags.address || 'N/A'}<br>
       `);
 
     markers.addLayer(marker); // Add marker to the MarkerCluster group
   });
 
   kindnessSpotsLayer.addLayer(markers); // Add the MarkerCluster group to the kindness spots layer
+
+  // Center the map on the new location
+  map.setView([lat, lng], 13);
 }
+
+// Fetch kindness spots data when the map is loaded (default to London)
+fetchKindnessSpots(51.5074, -0.1278); // Fetch kindness spots for London by default
 
 // Geolocation API to center map on user's location
 if (navigator.geolocation) {
@@ -79,20 +112,38 @@ if (navigator.geolocation) {
         .addTo(map)
         .bindPopup("You are here")
         .openPopup();
+
+      // Fetch kindness spots for the user's location
+      fetchKindnessSpots(userLat, userLng);
     },
     function(error) {
       console.error("Geolocation error: ", error);
-      map.setView([51.5074, -0.1278], 13); // Fallback to London if geolocation fails
+      // Fallback to London if geolocation fails
+      map.setView([51.5074, -0.1278], 13); // Default to London
     }
   );
 } else {
   console.error("Geolocation is not supported by this browser.");
-  map.setView([51.5074, -0.1278], 13); // Fallback to London if geolocation is not supported
+  // Fallback to London if geolocation is not supported
+  map.setView([51.5074, -0.1278], 13); // Default to London
 }
+
+// Add search control (Geocoder) to the map
+L.Control.geocoder({
+  collapsed: false,
+  geocoder: new L.Control.Geocoder.Nominatim()
+}).on('markgeocode', function(e) {
+  const lat = e.geocode.center.lat;
+  const lng = e.geocode.center.lng;
+
+  // Fetch kindness spots for the new location
+  fetchKindnessSpots(lat, lng);
+
+}).addTo(map);
 
 // Optional: Add a control to toggle the kindness spots layer on/off
 const overlayMaps = {
-  "Kindness Spots": kindnessSpotsLayer  // Add kindness spots layer to the overlayMaps control
+  "Kindness Spots": kindnessSpotsLayer,
 };
 
-L.control.layers(null, overlayMaps).addTo(map);  // Add the layer control to the map
+L.control.layers(null, overlayMaps).addTo(map);

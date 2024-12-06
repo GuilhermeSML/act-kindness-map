@@ -13,3 +13,22 @@ html, body {
 body {
   font-family: Arial, sans-serif;
 }
+
+/* Custom style to add opacity background behind icons */
+.icon-background {
+  position: relative;
+  display: inline-block;
+}
+
+.icon-background::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.7); /* White background with 70% opacity */
+  border-radius: 50%; /* Makes the background circular */
+  z-index: -1; /* Ensure the background is behind the icon */
+}
+
