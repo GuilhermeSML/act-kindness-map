@@ -1,19 +1,15 @@
+/* Set full height for the map */
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+/* Optional: Style the map container */
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f9f9f9;
-  }
-  
-  header {
-    text-align: center;
-    padding: 20px;
-    background-color: #004d99;
-    color: white;
-  }
-  
-  #map {
-    height: 80vh; /* Make the map fill most of the screen */
-    width: 100%;
-  }
-  
+  font-family: Arial, sans-serif;
+}
